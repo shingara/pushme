@@ -1,9 +1,26 @@
 = pushme
 
-Description goes here.
+parse some data and push it on the web
+
+This program is under developpement and can be not more develop. See later to know.
+
+If you want use it, you need add a config file in params. You can start it like that
+
+ $ ruby -Ilib lib/pushme.rb config/pushme.yaml
+
+In the config file (pushme.yaml), you can define a lot of thing :
+ * The Redis location
+ * The Log level you want in STDOUT
+ * A list of URL you want parse. If a new item is sending in this resource,
+   A push is send. The configuration of this push can be to twitter or to open-notification
+
+Now, only URL in JSON works and the push can be only to open-notification or twitter. Maybe I can
+add some other push style and Resource parsing.
+
+For me I use YahooPipe to generate a Resource with JSON rendering.
 
 == Note on Patches/Pull Requests
- 
+
 * Fork the project.
 * Make your feature addition or bug fix.
 * Add tests for it. This is important so I don't break it in a
