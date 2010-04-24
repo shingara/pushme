@@ -13,7 +13,7 @@ module Pushme
       end
     end
     def exists?(parser, link)
-      @redis.set_add(parser.redis_key, link)
+      @redis.sadd(parser.redis_key, link)
     end
 
   end
