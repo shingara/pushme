@@ -19,6 +19,16 @@ add some other push style and Resource parsing.
 
 For me I use YahooPipe to generate a Resource with JSON rendering.
 
+== How use it
+
+Install all dependencies by bundle
+
+ $ bundle install
+
+Launch it by bundle
+
+ $ bundle exec ruby -Ilib lib/pushme.rb config/pushme.yaml
+
 == Note on Patches/Pull Requests
 
 * Fork the project.
