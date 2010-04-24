@@ -1,4 +1,5 @@
 require 'redis'
+
 module Pushme
   class Feed
     def initialize
