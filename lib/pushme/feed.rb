@@ -8,7 +8,7 @@ module Pushme
       parsers.each do |parser|
         redis.delete(parser.redis_key)
         parser.items do |item|
-          redis.set_add parser.redis_key, item['link']
+          redis.sadd parser.redis_key, item['link']
         end
       end
     end
