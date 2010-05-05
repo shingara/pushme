@@ -11,7 +11,23 @@ require 'restclient/components'
 require 'rack/cache'
 require 'redis-store'
 
-Pushme::OPTIONS = YAML.load_file(ARGV[0])
+require 'choice'
+
+Choice.options do
+  option :config do
+    short '-c'
+    long '--config=FILE'
+    desc 'the file with configuration of pushme'
+  end
+
+  option :help do
+    long '--help'
+    desc 'Show this message'
+  end
+
+end
+
+Pushme::OPTIONS = YAML.load_file(Choice.choices[:config])
 Pushme::Logger = Logger.new(STDOUT)
 Pushme::Logger.level = eval(Pushme::OPTIONS[:log_level]) || Logger::ERROR
 
