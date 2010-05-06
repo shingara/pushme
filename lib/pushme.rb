@@ -27,38 +27,49 @@ Choice.options do
     default STDOUT
   end
 
+  option :jid, :required => true do
+    long '--jid=jid'
+    desc 'your jid listen'
+  end
+
+  option :jid_password, :required => true do
+    long '--jid-password=jid-password'
+    desc 'your password of your jid'
+  end
+
   option :help do
     long '--help'
     desc 'Show this message'
   end
 end
-    class ProxyLogger
-      def initialize(logger)
-        @logger = logger
-      end
 
-      def write(msg)
-        @logger.info(msg)
-      end
+class ProxyLogger
+  def initialize(logger)
+    @logger = logger
+  end
 
-      def flush
-        #nothing
-      end
+  def write(msg)
+    @logger.info(msg)
+  end
 
-      def puts(msg)
-        if msg.is_a?(Array)
-          @logger.info(msg.map(&:chomp).join("\n"))
-        elsif msg.is_a?(String)
-          @logger.info(msg.chomp)
-        else
-          @logger.info(msg)
-        end
-      end
+  def flush
+    #nothing
+  end
 
-      def method_missing(method, *args)
-        @logger.send(method, *args)
-      end
+  def puts(msg)
+    if msg.is_a?(Array)
+      @logger.info(msg.map(&:chomp).join("\n"))
+    elsif msg.is_a?(String)
+      @logger.info(msg.chomp)
+    else
+      @logger.info(msg)
     end
+  end
+
+  def method_missing(method, *args)
+    @logger.send(method, *args)
+  end
+end
 
 class LogError
   def initialize(app, logger)
@@ -71,6 +82,8 @@ class LogError
     @app.call(env)
   end
 end
+
+
 
 Pushme::OPTIONS = YAML.load_file(Choice.choices[:config])
 Pushme::Logger = Logger.new(Choice.choices[:log])
@@ -88,7 +101,23 @@ RestClient.enable Rack::Cache,
 RestClient.enable Rack::CommonLogger, ProxyLogger.new(Pushme::Logger)
 RestClient.log = Pushme::Logger
 
+require 'blather/client/dsl'
+$stdout.sync = true
+
+module Ping
+  extend Blather::DSL
+  def self.run; client.run; end
+
+  setup Choice.choices[:jid], Choice.choices[:jid_password]
+
+  message :chat?, :body do |m|
+    say m.from, 'ping'
+  end
+end
+
 EventMachine.run {
+  Ping.run
+
   EventMachine::PeriodicTimer.new(Pushme::OPTIONS[:cycle]) do
     Pushme::Logger.info('check feeds')
     parsers.each do |parser|
