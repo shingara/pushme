@@ -94,8 +94,8 @@ EventMachine.run {
     parsers.each do |parser|
       Pushme::Logger.debug("parse feeds : #{parser.inspect}")
       parser.items do |item|
-        if feed.exists?(parser, item['link'])
-          parser.push(item['link'])
+        if feed.exists?(parser, item)
+          parser.push(item)
           Pushme::Logger.info("push item #{item.inspect}")
         end
       end

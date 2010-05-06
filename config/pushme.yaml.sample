@@ -6,6 +6,7 @@
   :port: 6379
 :datas:
   - :redis_key: sorailsupdate::feed-update
+    :feed_type: atom
     :push:
       :type: :twitter
       :option:
@@ -13,6 +14,7 @@
         :password: TWITTER_PASSWORD
     :feed_url: URL_RETURN_JSON
   - :redis_key: feed-update
+    :feed_type: json
     :push:
       :type: :open_notification
       :option:
