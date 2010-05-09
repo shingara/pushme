@@ -1,8 +1,3 @@
-require 'pushme/push'
-require 'pushme/parser'
-require 'pushme/parsers'
-require 'pushme/feed'
-
 require 'eventmachine'
 require 'yaml'
 require 'logger'
@@ -10,6 +5,12 @@ require 'redis'
 require 'restclient/components'
 require 'rack/cache'
 require 'redis-store'
+require 'mongo_mapper'
+
+require 'pushme/push'
+require 'pushme/parser'
+#require 'pushme/parsers'
+require 'pushme/feed'
 
 require 'choice'
 
@@ -58,11 +59,11 @@ class ProxyLogger
 
   def puts(msg)
     if msg.is_a?(Array)
-      @logger.info(msg.map(&:chomp).join("\n"))
+      @logger.debug(msg.map(&:chomp).join("\n"))
     elsif msg.is_a?(String)
-      @logger.info(msg.chomp)
+      @logger.debug(msg.chomp)
     else
-      @logger.info(msg)
+      @logger.debug(msg)
     end
   end
 
@@ -86,10 +87,28 @@ end
 
 
 Pushme::OPTIONS = YAML.load_file(Choice.choices[:config])
+
 Pushme::Logger = Logger.new(Choice.choices[:log])
 Pushme::Logger.level = eval(Pushme::OPTIONS[:log_level]) || Logger::ERROR
 
-parsers = Pushme::Parsers.new(Pushme::OPTIONS[:datas])
+MongoMapper.connection = Mongo::Connection.new(Pushme::OPTIONS[:mongodb][:host],
+                                               Pushme::OPTIONS[:mongodb][:port],
+                                               :logger => Pushme::Logger)
+MongoMapper.database = Pushme::OPTIONS[:mongodb][:database]
+MongoMapper.database.authenticate(Pushme::OPTIONS[:mongodb][:username],
+                                  Pushme::OPTIONS[:mongodb][:password]) if Pushme::OPTIONS[:mongodb][:username] && Pushme::OPTIONS[:mongodb][:password]
+
+#parsers = Pushme::Parsers.new(Pushme::OPTIONS[:datas])
+Pushme::Parser.all.each {|f| f.delete }
+Pushme::OPTIONS[:datas].each do |data|
+  unless Pushme::Parser.exists?(:feed_url => data[:feed_url],
+                      :feed_type => data[:feed_type])
+    Pushme::Parser.create(:feed_url => data[:feed_url],
+                          :feed_type => data[:feed_type],
+                          :redis_key => data[:redis_key],
+                          :pusher => Pushme::Push.new(data[:push]))
+  end
+end
 feed = Pushme::Feed.new
 
 RestClient.enable LogError, ProxyLogger.new(Pushme::Logger)
@@ -106,11 +125,23 @@ $stdout.sync = true
 
 module Ping
   extend Blather::DSL
+
   def self.run; client.run; end
 
   setup Choice.choices[:jid], Choice.choices[:jid_password]
 
+  when_ready do
+    p 'ok'
+    Pushme::Logger.debug "Connected ! send messages to #{jid.stripped}."
+  end
+
+  message do |m|
+    p 'message'
+    p m
+  end
+
   message :chat?, :body do |m|
+    puts 'ok'
     say m.from, 'ping'
   end
 end
@@ -120,7 +151,7 @@ EventMachine.run {
 
   EventMachine::PeriodicTimer.new(Pushme::OPTIONS[:cycle]) do
     Pushme::Logger.info('check feeds')
-    parsers.each do |parser|
+    Pushme::Parser.all.each do |parser|
       Pushme::Logger.debug("parse feeds : #{parser.inspect}")
       parser.items do |item|
         if feed.exists?(parser, item)
@@ -131,5 +162,7 @@ EventMachine.run {
     end
   end
   Pushme::Logger.debug('start eventmachine')
+
 }
+
 Pushme::Logger.debug("stop eventmachine")

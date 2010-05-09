@@ -4,12 +4,16 @@
 :redis:
   :host: localhost
   :port: 6379
+:mongodb:
+  :host: localhost
+  :port: 27017
+  :database: pushme
 :datas:
   - :redis_key: sorailsupdate::feed-update
     :feed_type: atom
     :push:
       :type: :twitter
-      :option:
+      :options:
         :login: TWITTER_LOGIN
         :password: TWITTER_PASSWORD
     :feed_url: URL_RETURN_JSON
@@ -17,7 +21,7 @@
     :feed_type: json
     :push:
       :type: :open_notification
-      :option:
+      :options:
         :api_key: OPEN_NOTIFICATION_API_KEY
         :channel: jabber
         :to: TO_SEND_JABBER_NOTIFICATION

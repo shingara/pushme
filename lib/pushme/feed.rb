@@ -2,9 +2,11 @@ require 'redis'
 
 module Pushme
   class Feed
+
     def initialize
       @redis = Redis.new
     end
+
     def bootstrap_data(parsers)
       parsers.each do |parser|
         redis.delete(parser.redis_key)
@@ -13,6 +15,7 @@ module Pushme
         end
       end
     end
+
     def exists?(parser, link)
       @redis.sadd(parser.redis_key, link)
     end
