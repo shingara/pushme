@@ -135,15 +135,22 @@ module Ping
     Pushme::Logger.debug "Connected ! send messages to #{jid.stripped}."
   end
 
-  message do |m|
-    p 'message'
-    p m
-  end
-
   message :chat?, :body do |m|
     puts 'ok'
-    say m.from, 'ping'
+    p Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
+    client.write Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
+    puts 'write'
   end
+
+  iq '/iq/pubsub' do |s|
+    puts 'sub'
+    p s
+  end
+
+  disconnected {
+    p 'dis'
+    client.run }
+
 end
 
 EventMachine.run {
