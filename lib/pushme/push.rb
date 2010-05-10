@@ -13,6 +13,10 @@ module Pushme
 
     private
 
+    def post_http(link)
+      RestClient.post(options['url'], :link => link)
+    end
+
     def twitter(link)
       httpauth = Twitter::HTTPAuth.new(options['login'], options['password'])
       client = Twitter::Base.new(httpauth)
