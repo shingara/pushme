@@ -12,7 +12,7 @@ module Pushme
     field :feed_url, :type => String
     field :feed_type, :type => String
     field :redis_key, :type => String
-    embeds_one :pusher, :class_name => Pushme::Push
+    embeds_one :pusher, :class_name => 'Pushme::Push'
 
     def items
       if feed_type == 'json'

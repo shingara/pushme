@@ -103,9 +103,7 @@ feed = Pushme::Feed.new
 
 RestClient.enable LogError, ProxyLogger.new(Pushme::Logger)
 RestClient.enable Rack::Cache,
-  :verbose => true,
-  :metastore   => 'redis://localhost:6379/',
-  :entitystore => 'redis://localhost:6379/'
+  :verbose => true
 
 RestClient.enable Rack::CommonLogger, ProxyLogger.new(Pushme::Logger)
 RestClient.log = Pushme::Logger
