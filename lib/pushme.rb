@@ -138,18 +138,27 @@ module Ping
   message :chat?, :body do |m|
     puts 'ok'
     p Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
-    client.write Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
+    node = Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
+    # node.subscribe['pushme:type'] = 'open-notification'
+    # node.subscribe['pushme:api_key'] = '4b1ede9b7e21025d9d000001'
+    # node.subscribe['pushme:channel'] = 'jabber'
+    # node.subscribe['pushme:to'] = 'cyril.mougel@gmail.com'
+    # p node
+    client.write(node)
     puts 'write'
   end
 
-  iq '/iq/pubsub' do |s|
-    puts 'sub'
-    p s
+  pubsub_subscribe   do |n|
+    p n
+    {:url => n.node,
+      :username => n.jid,
+      :redis_key => "#{n.jid}::#{n.node}"}
   end
 
-  disconnected {
+  disconnected do
     p 'dis'
-    client.run }
+    client.run
+  end
 
 end
 
