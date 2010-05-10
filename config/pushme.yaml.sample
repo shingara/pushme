@@ -12,7 +12,7 @@
   - :redis_key: sorailsupdate::feed-update
     :feed_type: atom
     :push:
-      :type: :twitter
+      :push_type: :twitter
       :options:
         :login: TWITTER_LOGIN
         :password: TWITTER_PASSWORD
@@ -20,7 +20,7 @@
   - :redis_key: feed-update
     :feed_type: json
     :push:
-      :type: :open_notification
+      :push_type: :open_notification
       :options:
         :api_key: OPEN_NOTIFICATION_API_KEY
         :channel: jabber
