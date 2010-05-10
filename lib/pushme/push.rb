@@ -3,9 +3,9 @@ require 'restclient'
 
 module Pushme
   class Push
-    include MongoMapper::EmbeddedDocument
-    key :type, String
-    key :options, Hash
+    include Mongoid::Document
+    field :push_type, :type => String
+    field :options, :type => Hash
 
     def push(link)
       send(type, link)

@@ -5,12 +5,12 @@ require 'redis'
 require 'restclient/components'
 require 'rack/cache'
 require 'redis-store'
-require 'mongo_mapper'
+require 'mongoid'
 
 require 'pushme/push'
 require 'pushme/parser'
-#require 'pushme/parsers'
 require 'pushme/feed'
+require 'thin'
 
 require 'choice'
 
@@ -26,16 +26,6 @@ Choice.options do
     long '--log=FILE'
     desc 'the file where all log are write'
     default STDOUT
-  end
-
-  option :jid, :required => true do
-    long '--jid=jid'
-    desc 'your jid listen'
-  end
-
-  option :jid_password, :required => true do
-    long '--jid-password=jid-password'
-    desc 'your password of your jid'
   end
 
   option :help do
@@ -91,18 +81,16 @@ Pushme::OPTIONS = YAML.load_file(Choice.choices[:config])
 Pushme::Logger = Logger.new(Choice.choices[:log])
 Pushme::Logger.level = eval(Pushme::OPTIONS[:log_level]) || Logger::ERROR
 
-MongoMapper.connection = Mongo::Connection.new(Pushme::OPTIONS[:mongodb][:host],
-                                               Pushme::OPTIONS[:mongodb][:port],
-                                               :logger => Pushme::Logger)
-MongoMapper.database = Pushme::OPTIONS[:mongodb][:database]
-MongoMapper.database.authenticate(Pushme::OPTIONS[:mongodb][:username],
-                                  Pushme::OPTIONS[:mongodb][:password]) if Pushme::OPTIONS[:mongodb][:username] && Pushme::OPTIONS[:mongodb][:password]
+Mongoid.configure do |config|
+    name = Pushme::OPTIONS[:mongodb][:database]
+    host = Pushme::OPTIONS[:mongodb][:host]
+    config.allow_dynamic_fields = false
+    config.master = Mongo::Connection.new.db(name, :logger => Pushme::Logger)
+end
 
-#parsers = Pushme::Parsers.new(Pushme::OPTIONS[:datas])
-Pushme::Parser.all.each {|f| f.delete }
 Pushme::OPTIONS[:datas].each do |data|
-  unless Pushme::Parser.exists?(:feed_url => data[:feed_url],
-                      :feed_type => data[:feed_type])
+  if Pushme::Parser.find(:first, :conditions => {:feed_url => data[:feed_url],
+                      :feed_type => data[:feed_type]}).nil?
     Pushme::Parser.create(:feed_url => data[:feed_url],
                           :feed_type => data[:feed_type],
                           :redis_key => data[:redis_key],
@@ -120,50 +108,7 @@ RestClient.enable Rack::Cache,
 RestClient.enable Rack::CommonLogger, ProxyLogger.new(Pushme::Logger)
 RestClient.log = Pushme::Logger
 
-require 'blather/client/dsl'
-$stdout.sync = true
-
-module Ping
-  extend Blather::DSL
-
-  def self.run; client.run; end
-
-  setup Choice.choices[:jid], Choice.choices[:jid_password]
-
-  when_ready do
-    p 'ok'
-    Pushme::Logger.debug "Connected ! send messages to #{jid.stripped}."
-  end
-
-  message :chat?, :body do |m|
-    puts 'ok'
-    p Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
-    node = Blather::Stanza::PubSub::Subscribe.new(:set, Choice.choices[:jid], 'http://google.com', 'cyril.mougel@gmail.com')
-    # node.subscribe['pushme:type'] = 'open-notification'
-    # node.subscribe['pushme:api_key'] = '4b1ede9b7e21025d9d000001'
-    # node.subscribe['pushme:channel'] = 'jabber'
-    # node.subscribe['pushme:to'] = 'cyril.mougel@gmail.com'
-    # p node
-    client.write(node)
-    puts 'write'
-  end
-
-  pubsub_subscribe   do |n|
-    p n
-    {:url => n.node,
-      :username => n.jid,
-      :redis_key => "#{n.jid}::#{n.node}"}
-  end
-
-  disconnected do
-    p 'dis'
-    client.run
-  end
-
-end
-
-EventMachine.run {
-  Ping.run
+EventMachine.run do
 
   EventMachine::PeriodicTimer.new(Pushme::OPTIONS[:cycle]) do
     Pushme::Logger.info('check feeds')
@@ -177,8 +122,10 @@ EventMachine.run {
       end
     end
   end
-  Pushme::Logger.debug('start eventmachine')
 
-}
+  Thin::Server.start('0.0.0.0', 3000) do
+    use Rack::CommonLogger
+    use Hello
+  end
 
-Pushme::Logger.debug("stop eventmachine")
+end

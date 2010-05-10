@@ -7,12 +7,12 @@ module Pushme
   end
 
   class Parser
-    include MongoMapper::Document
+    include Mongoid::Document
 
-    key :feed_url, String
-    key :feed_type, String
-    key :redis_key, String
-    key :pusher, Pushme::Push
+    field :feed_url, :type => String
+    field :feed_type, :type => String
+    field :redis_key, :type => String
+    embeds_one :pusher, :class_name => Pushme::Push
 
     def items
       if feed_type == 'json'
