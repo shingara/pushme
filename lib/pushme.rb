@@ -6,10 +6,12 @@ require 'restclient/components'
 require 'rack/cache'
 require 'redis-store'
 require 'mongoid'
+require 'sinatra'
 
 require 'pushme/push'
 require 'pushme/parser'
 require 'pushme/feed'
+require 'pushme/server'
 require 'thin'
 
 require 'choice'
@@ -123,9 +125,6 @@ EventMachine.run do
     end
   end
 
-  Thin::Server.start('0.0.0.0', 3000) do
-    use Rack::CommonLogger
-    use Hello
-  end
+  PushmeServer.run!
 
 end
